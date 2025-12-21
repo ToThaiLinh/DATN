@@ -1,0 +1,32 @@
+# Data volumes
+/data/
+/mariadb/data/
+/postgres/data/
+/minio/data/
+/jupyter-notebook/notebooks/data/
+
+# Airflow
+/airflow/logs/
+/airflow/.logs/
+/airflow/.scheduler/
+/airflow/.webserver/
+
+# Kafka
+/kafka/
+
+# Python
+__pycache__/
+*.pyc
+.env
+.venv/
+
+# Spark
+spark-warehouse/
+metastore_db/
+
+# Makefile
+/Makefile
+
+# Docker compose
+/docker-compose_old.yml
+/docker-compose-v2.yml

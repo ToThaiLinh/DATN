@@ -1,0 +1,10 @@
+kafka:
+  clusters:
+    - name: local-kraft
+      bootstrapServers: kafka1:9092
+      schemaRegistry: ""
+      properties:
+        security.protocol: PLAINTEXT
+  web:
+    allowTopicDelete: true
+    allowSchemaDelete: true
