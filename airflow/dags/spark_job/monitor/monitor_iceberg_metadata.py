@@ -10,7 +10,7 @@ from botocore.client import Config
 from urllib.parse import urlparse
 from datetime import datetime
 
-park = SparkSession.builder \
+spark = SparkSession.builder \
     .appName("monitor_iceberg_data") \
     .master("spark://spark-master:7077") \
     .config("spark.cores.max", "1") \

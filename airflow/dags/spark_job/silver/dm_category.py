@@ -2,6 +2,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
+from pyspark.sql.window import Window
 
 spark = SparkSession.builder \
     .appName("dm_category") \
@@ -26,24 +27,44 @@ spark.sparkContext.setLogLevel('ERROR')
 
 df = spark.read \
     .format('iceberg') \
-    .load('iceberg.bronze.categories')
+    .load('iceberg.bronze.sub_categories')
 # df.printSchema()
 
 df = df.select(
-    'category_id', 
-    'text',
+    'id', 
+    'parent_id',
+    'name', 
+    'type',
+    'url_key',
+    'url_path',
+    'level',
+    'status',
+    'include_in_menu',
+    'is_leaf',
+    'meta_title',
+    'meta_description',
+    'meta_keywords',
+    'thumbnail_url',
     'ngay_cap_nhat'
-).withColumn('ngay_cap_nhat_date', F.to_date('ngay_cap_nhat'))
+)
 
-max_date = df.agg(F.max("ngay_cap_nhat_date")).first()[0]
+w = (
+    Window
+    .partitionBy("id")
+    .orderBy(F.col("ngay_cap_nhat").desc())
+)
 
-df = df.filter(col('ngay_cap_nhat_date') == max_date)
-df = df.drop('ngay_cap_nhat_date', 'ngay_cap_nhat')
+df = (
+    df
+    .withColumn("rn", F.row_number().over(w))
+    .filter(F.col("rn") == 1)
+    .drop("rn", "ngay_cap_nhat")
+)
 
-df = df.dropDuplicates()
+df = df.withColumnRenamed('id', 'category_id')
+df = df.withColumnRenamed('name', 'category_name')
 
 df = df.withColumn("ngay_cap_nhat", current_timestamp())
-df = df.withColumnRenamed("text", "category_name")
 
 df.write \
     .format('iceberg') \

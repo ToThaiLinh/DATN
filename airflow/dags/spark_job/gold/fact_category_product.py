@@ -31,6 +31,12 @@ df_product = spark.read \
         'product_id',
         'category_id',
         'name',
+        'price',
+        'original_price',
+        'discount',
+        'discount_rate',
+        'quantity_sold',
+        'stock_qty',
         'created_date'
     )
 
@@ -41,52 +47,27 @@ df_category = spark.read \
         'category_id',
         'category_name'
     )
-df_product_price = spark.read \
-    .format('iceberg') \
-    .load('iceberg.silver.sub_product_price') \
-    .select(
-        'product_id',
-        'price',
-        'original_price',
-        'discount',
-        'discount_rate'
-    )
-
-df_product_sale = spark.read \
-    .format('iceberg') \
-    .load('iceberg.silver.sub_product_sale') \
-    .select(
-        'product_id',
-        'quantity_sold'
-    )
-
-df_product_inventory = spark.read \
-    .format('iceberg') \
-    .load('iceberg.silver.sub_product_inventory') \
-    .select (
-        'product_id',
-        'stock_qty'
-    )
 
 df = df_product.join(df_category, df_product['category_id'] == df_category['category_id'], 'inner') \
-    .drop(df_category['category_id']) \
-    .join(df_product_price, df_product['product_id'] == df_product_price['product_id'], 'inner') \
-    .drop(df_product_price['product_id']) \
-    .join(df_product_sale, df_product['product_id'] == df_product_sale['product_id'], 'inner') \
-    .drop(df_product_sale['product_id']) \
-    .join(df_product_inventory, df_product['product_id'] == df_product_inventory['product_id'], 'inner') \
-    .drop(df_product_inventory['product_id'])
+    .drop(df_category['category_id'])
 
 group_column = ['category_id', 'category_name']
-df = df.groupBy(*group_column) \
-    .agg(
-        F.count(col('product_id')).alias('total_product'),
-        F.sum(col('quantity_sold')).alias('total_quantity_sold'),
-        (F.sum(col('price') * col('quantity_sold'))).alias('revenue'),
-        F.round(F.avg(col('price')), 2).alias('avg_price'),
-        F.round(F.sum(col('quantity_sold')) / F.count(col('product_id')), 2).alias('avg_units_sold_per_product')
-    )
-df.printSchema()
+
+df = df.groupBy(*group_column).agg(
+    F.countDistinct('product_id').alias('total_product'),
+    F.coalesce(F.sum(F.coalesce(col('quantity_sold'), F.lit(0))), F.lit(0)).alias('total_quantity_sold'),
+    F.coalesce(F.sum(F.coalesce(col('price'), F.lit(0)) * F.coalesce(col('quantity_sold'), F.lit(0))), F.lit(0)).alias('revenue'),
+    F.round(F.coalesce(F.avg(col('price')), F.lit(0)), 2).alias('avg_price'),
+    F.round(
+        F.when(
+            F.countDistinct('product_id') == 0,
+            F.lit(0)
+        ).otherwise(
+            F.coalesce(F.sum(F.coalesce(col('quantity_sold'), F.lit(0))), F.lit(0)) / F.countDistinct('product_id')
+        ),
+        2
+    ).alias('avg_units_sold_per_product')
+)
 
 df = df.withColumn("ngay_cap_nhat", current_timestamp())
 

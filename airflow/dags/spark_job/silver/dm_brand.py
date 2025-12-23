@@ -2,6 +2,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
+from pyspark.sql.window import Window
 
 spark = SparkSession.builder \
     .appName("dm_brand") \
@@ -29,12 +30,18 @@ df = spark.read \
     .load('iceberg.bronze.product_details')
 # df.printSchema()
 
-max_date = df.agg(F.max("ngay_cap_nhat_date")).first()[0]
+w = (
+    Window
+    .partitionBy("brand_id")
+    .orderBy(F.col("ngay_cap_nhat").desc())
+)
 
-df = df.filter(col('ngay_cap_nhat_date') == max_date)
-df = df.drop('ngay_cap_nhat_date', 'ngay_cap_nhat')
-
-df = df.dropDuplicates()
+df = (
+    df
+    .withColumn("rn", F.row_number().over(w))
+    .filter(F.col("rn") == 1)
+    .drop("rn", "ngay_cap_nhat")
+)
 
 df = df.filter(col("brand_id").isNotNull())
 

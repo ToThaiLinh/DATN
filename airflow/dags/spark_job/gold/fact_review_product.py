@@ -37,15 +37,15 @@ df_product = spark.read \
         'product_id',
         'name'
     )
+# df_product.printSchema()
 
 df = df_review.join(df_product, df_review['product_id'] == df_product['product_id'], 'inner').drop(df_product['product_id'])
 df = df.select(
     df_review['*'],
     df_product['name'].alias('product_name')
 )
-df.printSchema()
 
-group_column = ['review_date', 'product_id', 'product_name']
+group_column = ['product_id', 'product_name']
 df = df.groupBy(*group_column) \
     .agg(
         F.count(col('review_id')).alias('total_review'),

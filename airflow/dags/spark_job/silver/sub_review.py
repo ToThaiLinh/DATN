@@ -2,6 +2,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
+from pyspark.sql.window import Window
 
 spark = SparkSession.builder \
     .appName("sub_review") \
@@ -46,14 +47,20 @@ df = df.select(
     'current_date',
     'timeline_content',
     'ngay_cap_nhat'
-).withColumn("ngay_cap_nhat_date", F.to_date('ngay_cap_nhat'))
+)
 
-max_date = df.agg(F.max("ngay_cap_nhat_date")).first()[0]
+w = (
+    Window
+    .partitionBy("review_id")
+    .orderBy(F.col("ngay_cap_nhat").desc())
+)
 
-df = df.filter(col('ngay_cap_nhat_date') == max_date)
-df = df.drop('ngay_cap_nhat_date', 'ngay_cap_nhat')
-
-df = df.dropDuplicates()
+df = (
+    df
+    .withColumn("rn", F.row_number().over(w))
+    .filter(F.col("rn") == 1)
+    .drop("rn", "ngay_cap_nhat")
+)
 
 df = df.withColumnRenamed("timeline_review_created_date", "created_date")
 
@@ -68,6 +75,8 @@ df = df.withColumn("rating", col("rating").cast("integer")) \
 df = df.filter(col("review_id").isNotNull())
 
 df = df.withColumn("ngay_cap_nhat", current_timestamp())
+
+df = df.drop('current_date()')
 
 df.write \
     .format('iceberg') \

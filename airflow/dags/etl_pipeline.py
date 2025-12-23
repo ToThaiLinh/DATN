@@ -3,11 +3,26 @@ from airflow.models.baseoperator import chain
 from helper.telegram_notification import notify_telegram
 from helper.SparkOperator import SparkOperator
 import pendulum
+from datetime import timedelta
+
+from gx_validations import (
+    validate_dm_brand,
+    validate_dm_category,
+    validate_dm_product,
+    validate_dm_seller,
+    validate_sub_review,
+)
+from helper.GXValidateOperator import gx_validate_task
 
 default_args = {
-    "owner": "airflow",
-    "retries": 0
+    "owner": "data-team",
+    "depends_on_past": False,
+    "retries": 1,
+    "retry_delay": timedelta(minutes=1),
+    "email_on_failure": False,
+    "email_on_retry": False,
 }
+
 
 with DAG(
     dag_id="etl_pipeline",
@@ -15,7 +30,7 @@ with DAG(
     schedule=None,
     catchup=False,
     default_args=default_args,
-    tags=["spark", "telegram"],
+    tags=["spark", "telegram", "etl_pipeline"],
 ) as dag:
 
     silver_dm_brand = SparkOperator(
@@ -40,24 +55,6 @@ with DAG(
         task_id="sillver_dm_seller",
         name="silver_dm_seller",
         application="/opt/airflow/dags/spark_job/silver/dm_seller.py",
-    ).build()
-
-    silver_sub_product_inventory = SparkOperator(
-        task_id="silver_sub_product_inventory",
-        name="silver_sub_product_inventory",
-        application="/opt/airflow/dags/spark_job/silver/sub_product_inventory.py",
-    ).build()
-
-    silver_sub_product_price = SparkOperator(
-        task_id="silver_sub_product_price",
-        name="silver_sub_product_price",
-        application="/opt/airflow/dags/spark_job/silver/sub_product_price.py",
-    ).build()
-
-    silver_sub_product_sale = SparkOperator(
-        task_id="silver_sub_product_sale",
-        name="silver_sub_product_sale",
-        application="/opt/airflow/dags/spark_job/silver/sub_product_sale.py",
     ).build()
 
     silver_sub_review = SparkOperator(
@@ -113,11 +110,14 @@ with DAG(
         silver_dm_brand,
         silver_dm_category,
         silver_dm_product,
-        silver_dm_seller,
-        silver_sub_product_inventory,
-        silver_sub_product_price,
-        silver_sub_product_sale,
+        silver_dm_seller
     ]
+
+    gx_dm_brand = gx_validate_task("dm_brand", validate_dm_brand)
+    gx_dm_category = gx_validate_task("dm_category", validate_dm_category)
+    gx_dm_product = gx_validate_task("dm_product", validate_dm_product)
+    gx_dm_seller = gx_validate_task("dm_seller", validate_dm_seller)
+    gx_sub_review = gx_validate_task("sub_review", validate_sub_review)
 
     gold = [
         gold_dim_brand,
@@ -129,12 +129,15 @@ with DAG(
         gold_fact_review,
     ]
 
-    silver_dm_product >> gold_dim_product
-    silver_dm_category >> gold_dim_category
-    silver_dm_seller >> gold_dim_seller
-    silver_sub_review >> gold_fact_review
-    [gold_dim_product, gold_dim_category, gold_dim_brand, gold_dim_seller] >> gold_fact_category_product
-    [gold_dim_product, gold_fact_review] >> gold_fact_review_product
+
+
+    silver_dm_brand >> gx_dm_brand >> gold_dim_brand
+    silver_dm_category >> gx_dm_category >> gold_dim_category
+    silver_dm_product >> gx_dm_product >> gold_dim_product
+    silver_dm_seller >> gx_dm_seller >> gold_dim_seller
+    silver_sub_review >> gx_sub_review >> gold_fact_review
+    [gx_dm_product, gx_dm_category] >> gold_fact_category_product
+    [gx_dm_product, gx_sub_review] >> gold_fact_review_product
 
 
 

@@ -1,3 +1,5 @@
+*
+
 # Data volumes
 /data/
 /mariadb/data/
@@ -20,13 +22,12 @@ __pycache__/
 .env
 .venv/
 
-# Spark
-spark-warehouse/
-metastore_db/
-
 # Makefile
 /Makefile
 
 # Docker compose
 /docker-compose_old.yml
 /docker-compose-v2.yml
+
+# VS code
+/.vscode/
