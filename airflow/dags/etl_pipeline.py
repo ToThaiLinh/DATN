@@ -113,11 +113,11 @@ with DAG(
         silver_dm_seller
     ]
 
-    gx_dm_brand = gx_validate_task("dm_brand", validate_dm_brand)
-    gx_dm_category = gx_validate_task("dm_category", validate_dm_category)
-    gx_dm_product = gx_validate_task("dm_product", validate_dm_product)
-    gx_dm_seller = gx_validate_task("dm_seller", validate_dm_seller)
-    gx_sub_review = gx_validate_task("sub_review", validate_sub_review)
+    gx_dm_brand = gx_validate_task("iceberg", "silver", "dm_brand", validate_dm_brand)
+    gx_dm_category = gx_validate_task("iceberg", "silver", "dm_category", validate_dm_category)
+    gx_dm_product = gx_validate_task("iceberg", "silver", "dm_product", validate_dm_product)
+    gx_dm_seller = gx_validate_task("iceberg", "silver", "dm_seller", validate_dm_seller)
+    gx_sub_review = gx_validate_task("iceberg", "silver", "sub_review", validate_sub_review)
 
     gold = [
         gold_dim_brand,

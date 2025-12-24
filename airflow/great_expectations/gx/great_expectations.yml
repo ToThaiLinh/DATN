@@ -103,6 +103,9 @@ fluent_datasources:
       test_iceberg_v1_df:
         type: dataframe
         batch_metadata: {}
+      dm_brand:
+        type: dataframe
+        batch_metadata: {}
 notebooks:
 include_rendered_content:
   globally: false
