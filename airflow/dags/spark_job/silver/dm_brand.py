@@ -30,6 +30,14 @@ df = spark.read \
     .load('iceberg.bronze.product_details')
 # df.printSchema()
 
+df = df.select(
+    'brand_id',
+    'brand_name',
+    'brand_slug',
+   'ngay_cap_nhat'
+)
+# df.printSchema()
+
 w = (
     Window
     .partitionBy("brand_id")

@@ -106,6 +106,42 @@ fluent_datasources:
       dm_brand:
         type: dataframe
         batch_metadata: {}
+      iceberg.silver.dm_seller:
+        type: dataframe
+        batch_metadata: {}
+      iceberg.silver.dm_category:
+        type: dataframe
+        batch_metadata: {}
+      iceberg.silver.sub_review:
+        type: dataframe
+        batch_metadata: {}
+      iceberg.silver.dm_product:
+        type: dataframe
+        batch_metadata: {}
+      iceberg.silver.dm_brand:
+        type: dataframe
+        batch_metadata: {}
+      iceberg.gold.dim_seller:
+        type: dataframe
+        batch_metadata: {}
+      iceberg.gold.dim_product:
+        type: dataframe
+        batch_metadata: {}
+      iceberg.gold.fact_category_product:
+        type: dataframe
+        batch_metadata: {}
+      iceberg.gold.dim_category:
+        type: dataframe
+        batch_metadata: {}
+      iceberg.gold.fact_review_product:
+        type: dataframe
+        batch_metadata: {}
+      iceberg.gold.fact_review:
+        type: dataframe
+        batch_metadata: {}
+      iceberg.gold.dim_brand:
+        type: dataframe
+        batch_metadata: {}
 notebooks:
 include_rendered_content:
   globally: false

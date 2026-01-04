@@ -44,7 +44,8 @@ df = df.select(
     'comment_count',
     'delivery_rating',
     'timeline_review_created_date',
-    'current_date',
+    'timeline_delivery_date',
+    'timeline_current_date',
     'timeline_content',
     'ngay_cap_nhat'
 )
@@ -62,7 +63,9 @@ df = (
     .drop("rn", "ngay_cap_nhat")
 )
 
-df = df.withColumnRenamed("timeline_review_created_date", "created_date")
+df = df.withColumnRenamed("timeline_review_created_date", "created_date") \
+    .withColumnRenamed("timeline_delivery_date", "delivery_date") \
+    .withColumnRenamed("timeline_current_date", "current_date")
 
 df = df.withColumn("rating", col("rating").cast("integer")) \
     .withColumn("score", col("score").cast("float")) \
@@ -70,13 +73,15 @@ df = df.withColumn("rating", col("rating").cast("integer")) \
     .withColumn("thank_count", col("thank_count").cast("integer")) \
     .withColumn("comment_count", col("comment_count").cast("integer")) \
     .withColumn("created_date", F.to_timestamp(col("created_date"))) \
+    .withColumn("delivery_date", F.to_timestamp(col("delivery_date"))) \
     .withColumn("current_date", F.to_timestamp(col("current_date")))
 
 df = df.filter(col("review_id").isNotNull())
 
 df = df.withColumn("ngay_cap_nhat", current_timestamp())
 
-df = df.drop('current_date()')
+# df = df.drop('current_date()')
+df = df.filter(col("rating") >= 1)
 
 df.write \
     .format('iceberg') \

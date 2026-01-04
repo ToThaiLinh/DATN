@@ -29,6 +29,17 @@ df = spark.read \
     .format('iceberg') \
     .load('iceberg.silver.dm_category')
 
+df = df.select(
+    "category_id", 
+    "parent_id", 
+    "category_name",
+    "type",
+    "level",
+    "status",
+    "is_leaf",
+    "ngay_cap_nhat"
+)
+
 df = df.withColumn("ngay_cap_nhat", current_timestamp())
 
 df.write \

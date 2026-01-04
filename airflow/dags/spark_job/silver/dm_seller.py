@@ -31,6 +31,7 @@ df = spark.read \
 
 df = df.select(
     'current_seller_id',
+    'current_seller_sku',
     'current_seller_name',
     'current_seller_store_id',
     'ngay_cap_nhat'

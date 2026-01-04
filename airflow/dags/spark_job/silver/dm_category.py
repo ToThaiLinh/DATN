@@ -64,6 +64,18 @@ df = (
 df = df.withColumnRenamed('id', 'category_id')
 df = df.withColumnRenamed('name', 'category_name')
 
+df = df.withColumn('level', col('level').cast('int')) \
+    .withColumn('include_in_menu', 
+        when(lower(trim(col('include_in_menu'))) == 'true', True)
+        .when(lower(trim(col('include_in_menu'))) == 'false', False)
+        .otherwise(None)
+    ) \
+    .withColumn('is_leaf', 
+        when(lower(trim(col('is_leaf'))) == 'true', True)
+        .when(lower(trim(col('is_leaf'))) == 'false', False)
+        .otherwise(None)
+    )
+
 df = df.withColumn("ngay_cap_nhat", current_timestamp())
 
 df.write \
