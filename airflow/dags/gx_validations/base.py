@@ -38,9 +38,37 @@ def run_validation(context, dataframe, table_name, validate_fn):
     checkpoint = context.add_or_update_checkpoint(
         name=f"checkpoint_{table_name}",
         validator=validator,
+        action_list=[
+            {
+                "name": "store_validation_result",
+                "action": {
+                    "class_name": "StoreValidationResultAction"
+                }
+            },
+            {
+                "name": "build_data_docs",
+                "action": {
+                    "class_name": "UpdateDataDocsAction"
+                }
+            }
+        ]
     )
 
     result = checkpoint.run()
+
+    print("📊 Validation success:", result.success)
+
+    for run_result in result.run_results.values():
+        validation_result = run_result["validation_result"]
+        print(
+            "✔️ Success:",
+            validation_result.success,
+            "| Evaluated:",
+            validation_result.statistics["evaluated_expectations"],
+            "| Failed:",
+            validation_result.statistics["unsuccessful_expectations"],
+        )
+
 
     context.view_validation_result(result)
 

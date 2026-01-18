@@ -23,7 +23,7 @@ ENV PYTHONPATH=${SPARK_HOME}/python:${SPARK_HOME}/python/lib/py4j-0.10.9.7-src.z
 
 WORKDIR ${SPARK_HOME}
 
-ENV SPARK_VERSION=3.5.7
+ENV SPARK_VERSION=3.5.8
 ENV SPARK_MAJOR_VERSION=3.5
 ENV ICEBERG_VERSION=1.9.0
 ENV HADOOP_VERSION=3.3.4
@@ -70,6 +70,13 @@ RUN curl -L -s \
     -o /opt/spark/jars/commons-pool2-2.11.1.jar
 # Copy custom configuration for master url and events logging
 # COPY ./spark-defaults.conf "${SPARK_HOME}/conf"
+
+# Download MySQL JDBC Driver
+ENV MYSQL_CONNECTOR_VERSION=8.0.33
+
+RUN curl -L -s \
+    https://repo1.maven.org/maven2/mysql/mysql-connector-java/${MYSQL_CONNECTOR_VERSION}/mysql-connector-java-${MYSQL_CONNECTOR_VERSION}.jar \
+    -o /opt/spark/jars/mysql-connector-java-${MYSQL_CONNECTOR_VERSION}.jar
 
 RUN chown -R airflow ${SPARK_HOME}
 

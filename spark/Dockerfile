@@ -21,7 +21,7 @@ ENV PYTHONPATH=${SPARK_HOME}/python:${SPARK_HOME}/python/lib/py4j-0.10.9.7-src.z
 
 WORKDIR ${SPARK_HOME}
 
-ENV SPARK_VERSION=3.5.7
+ENV SPARK_VERSION=3.5.8
 ENV SPARK_MAJOR_VERSION=3.5
 ENV ICEBERG_VERSION=1.9.0
 ENV HADOOP_VERSION=3.3.4
@@ -71,6 +71,13 @@ RUN curl -L -s \
 #  && sudo ./aws/install \
 #  && rm awscliv2.zip \
 #  && rm -rf aws/
+
+# Download MySQL JDBC Driver
+ENV MYSQL_CONNECTOR_VERSION=8.0.33
+
+RUN curl -L -s \
+    https://repo1.maven.org/maven2/mysql/mysql-connector-java/${MYSQL_CONNECTOR_VERSION}/mysql-connector-java-${MYSQL_CONNECTOR_VERSION}.jar \
+    -o /opt/spark/jars/mysql-connector-java-${MYSQL_CONNECTOR_VERSION}.jar
 
 COPY ./conf/spark-defaults.conf /opt/spark/conf
 ENV PATH="/opt/spark/sbin:/opt/spark/bin:${PATH}"
