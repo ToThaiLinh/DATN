@@ -72,12 +72,12 @@ RUN curl -L -s \
 #  && rm awscliv2.zip \
 #  && rm -rf aws/
 
-# Download MySQL JDBC Driver
-ENV MYSQL_CONNECTOR_VERSION=8.0.33
+# MySQL Connector/J 9.5.0
+ENV MYSQL_CONNECTOR_VERSION=9.5.0
 
 RUN curl -L -s \
-    https://repo1.maven.org/maven2/mysql/mysql-connector-java/${MYSQL_CONNECTOR_VERSION}/mysql-connector-java-${MYSQL_CONNECTOR_VERSION}.jar \
-    -o /opt/spark/jars/mysql-connector-java-${MYSQL_CONNECTOR_VERSION}.jar
+  https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/${MYSQL_CONNECTOR_VERSION}/mysql-connector-j-${MYSQL_CONNECTOR_VERSION}.jar \
+  -o /opt/spark/jars/mysql-connector-j-${MYSQL_CONNECTOR_VERSION}.jar
 
 COPY ./conf/spark-defaults.conf /opt/spark/conf
 ENV PATH="/opt/spark/sbin:/opt/spark/bin:${PATH}"

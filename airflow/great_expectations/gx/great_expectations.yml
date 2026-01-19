@@ -94,52 +94,19 @@ data_docs_sites:
       class_name: DefaultSiteIndexBuilder
 
 anonymous_usage_statistics:
-  data_context_id: 6fd9c507-0614-4691-adf3-165668f391ef
+  data_context_id: 745d6b2b-9b7a-4c07-b5e9-28e46696e5b6
   enabled: true
 fluent_datasources:
   spark_iceberg:
     type: spark
     assets:
-      test_iceberg_v1_df:
+      iceberg.silver.order_item_clean:
         type: dataframe
         batch_metadata: {}
-      dm_brand:
+      iceberg.gold.dim_customer:
         type: dataframe
         batch_metadata: {}
-      iceberg.silver.dm_seller:
-        type: dataframe
-        batch_metadata: {}
-      iceberg.silver.dm_category:
-        type: dataframe
-        batch_metadata: {}
-      iceberg.silver.sub_review:
-        type: dataframe
-        batch_metadata: {}
-      iceberg.silver.dm_product:
-        type: dataframe
-        batch_metadata: {}
-      iceberg.silver.dm_brand:
-        type: dataframe
-        batch_metadata: {}
-      iceberg.gold.dim_seller:
-        type: dataframe
-        batch_metadata: {}
-      iceberg.gold.dim_product:
-        type: dataframe
-        batch_metadata: {}
-      iceberg.gold.fact_category_product:
-        type: dataframe
-        batch_metadata: {}
-      iceberg.gold.dim_category:
-        type: dataframe
-        batch_metadata: {}
-      iceberg.gold.fact_review_product:
-        type: dataframe
-        batch_metadata: {}
-      iceberg.gold.fact_review:
-        type: dataframe
-        batch_metadata: {}
-      iceberg.gold.dim_brand:
+      iceberg.silver.product_clean:
         type: dataframe
         batch_metadata: {}
 notebooks:
