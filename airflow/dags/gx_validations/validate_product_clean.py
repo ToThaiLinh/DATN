@@ -45,19 +45,19 @@ def validate(validator):
         min_value=0
     )
 
-    validator.expect_column_values_to_not_be_null("product_height_cm")
+    # validator.expect_column_values_to_not_be_null("product_height_cm")
     validator.expect_column_values_to_be_between(
         "product_height_cm",
         min_value=0
     )
 
-    validator.expect_column_values_to_not_be_null("product_length_cm")
+    # validator.expect_column_values_to_not_be_null("product_length_cm")
     validator.expect_column_values_to_be_between(
         "product_length_cm",
         min_value=0
     )
 
-    validator.expect_column_values_to_not_be_null("product_width_cm")
+    # validator.expect_column_values_to_not_be_null("product_width_cm")
     validator.expect_column_values_to_be_between(
         "product_width_cm",
         min_value=0

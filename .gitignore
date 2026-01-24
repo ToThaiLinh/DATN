@@ -5,6 +5,7 @@
 /postgres/data/
 /minio/data/
 /jupyter-notebook/notebooks/data/
+/jupyter-notebook/notebooks/dataset/
 
 # Airflow
 /airflow/logs/
