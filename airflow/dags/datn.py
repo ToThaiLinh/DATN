@@ -2,6 +2,8 @@ from airflow import DAG
 from helper.SparkOperator import SparkOperator
 import pendulum
 from datetime import timedelta
+from airflow.operators.empty import EmptyOperator
+from airflow.utils.task_group import TaskGroup
 
 from gx_validations import (
     validate_customer_clean,
@@ -133,7 +135,24 @@ with DAG(
         application="/opt/airflow/dags/spark_job/gold/mart_logistics.py",
     ).build()
 
-    bronze = [
+    gx_customer_clean = gx_validate_task("iceberg", "silver", "customer_clean", validate_customer_clean)
+    gx_product_clean = gx_validate_task("iceberg", "silver", "product_clean", validate_product_clean)
+    gx_seller_clean = gx_validate_task("iceberg", "silver", "seller_clean", validate_seller_clean)
+    gx_order_clean = gx_validate_task("iceberg", "silver", "order_clean", validate_order_clean)
+    gx_order_item_clean = gx_validate_task("iceberg", "silver", "order_item_clean", validate_order_item_clean)
+
+    gx_dim_customer = gx_validate_task('iceberg', 'gold', 'dim_customer', validate_dim_customer)
+    gx_dim_product = gx_validate_task('iceberg', 'gold', 'dim_product', validate_dim_product)
+    gx_dim_seller = gx_validate_task('iceberg', 'gold', 'dim_seller', validate_dim_seller)
+    gx_fact_order_item = gx_validate_task('iceberg', 'gold', 'fact_order_item', validate_fact_order_item)
+
+    gx_mart_sales = gx_validate_task('iceberg', 'gold', 'mart_sales', validate_mart_sales)
+    gx_mart_logistics = gx_validate_task('iceberg', 'gold', 'mart_logistics', validate_mart_logistics)
+
+    start = EmptyOperator(
+        task_id="start"
+    )
+    start >> [
         olist_products_dataset,
         olist_sellers_dataset,
         olist_customers_dataset,
@@ -155,11 +174,25 @@ with DAG(
         seller_clean
     ]
 
-    gx_customer_clean = gx_validate_task("iceberg", "silver", "customer_clean", validate_customer_clean)
-    gx_product_clean = gx_validate_task("iceberg", "silver", "product_clean", validate_product_clean)
-    gx_seller_clean = gx_validate_task("iceberg", "silver", "seller_clean", validate_seller_clean)
-    gx_order_clean = gx_validate_task("iceberg", "silver", "order_clean", validate_order_clean)
-    gx_order_item_clean = gx_validate_task("iceberg", "silver", "order_item_clean", validate_order_item_clean)
+
+    customer_clean >> gx_customer_clean 
+    product_clean >> gx_product_clean 
+    seller_clean >> gx_seller_clean
+    order_clean  >> gx_order_clean
+    order_item_clean >> gx_order_item_clean
+
+    gx_customer_clean >> dim_customer >> gx_dim_customer
+    gx_product_clean >> dim_product >> gx_dim_product
+    gx_seller_clean >> dim_seller >> gx_dim_seller
+    [gx_order_clean, gx_order_item_clean, gx_dim_customer, gx_dim_product, gx_dim_seller] >> fact_order_item >> gx_fact_order_item
+
+    gx_validate_silver = [
+        gx_customer_clean,
+        gx_product_clean,
+        gx_seller_clean,
+        gx_order_clean,
+        gx_order_item_clean
+    ]
 
     gold = [
         dim_customer,
@@ -167,20 +200,6 @@ with DAG(
         dim_seller,
         fact_order_item
     ]
-
-    gx_dim_customer = gx_validate_task('iceberg', 'gold', 'dim_customer', validate_dim_customer)
-    gx_dim_product = gx_validate_task('iceberg', 'gold', 'dim_product', validate_dim_product)
-    gx_dim_seller = gx_validate_task('iceberg', 'gold', 'dim_seller', validate_dim_seller)
-    gx_fact_order_item = gx_validate_task('iceberg', 'gold', 'fact_order_item', validate_fact_order_item)
-
-    customer_clean >> gx_customer_clean >> dim_customer >> gx_dim_customer
-    product_clean >> gx_product_clean >> dim_product >> gx_dim_product
-    seller_clean >> gx_seller_clean >> dim_seller >> gx_dim_seller
-    order_clean  >> gx_order_clean >> fact_order_item >> gx_fact_order_item
-    order_item_clean >> gx_order_item_clean >> fact_order_item
-
-    gx_mart_sales = gx_validate_task('iceberg', 'gold', 'mart_sales', validate_mart_sales)
-    gx_mart_logistics = gx_validate_task('iceberg', 'gold', 'mart_logistics', validate_mart_logistics)
 
     [gx_dim_customer, gx_dim_product, gx_dim_seller, gx_fact_order_item] >> mart_sales >> gx_mart_sales
     [gx_dim_customer, gx_dim_product, gx_dim_seller, gx_fact_order_item] >> mart_logistics >> gx_mart_logistics

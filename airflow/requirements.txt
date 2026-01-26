@@ -17,7 +17,7 @@ sqlalchemy<2.0
 asyncpg
 
 # Great Expectations Core
-great-expectations==0.18.21
+great-expectations==0.18.22
 
 # Data processing
 pandas==2.1.0

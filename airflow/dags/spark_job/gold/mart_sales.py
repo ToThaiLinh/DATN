@@ -1,11 +1,11 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import *
+from pyspark.sql.functions import col, sum as _sum, countDistinct, count, lit
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
 from pyspark.sql.window import Window
 
 spark = SparkSession.builder \
-    .appName("mart_logistics") \
+    .appName("mart_sales") \
     .config("spark.cores.max", "1") \
     .config("spark.executor.memory", "2g") \
     .config("spark.hadoop.fs.s3a.endpoint", "http://minio:9000") \
@@ -25,69 +25,48 @@ spark = SparkSession.builder \
 
 spark.sparkContext.setLogLevel('ERROR')
 
-fact = spark.table("iceberg.gold.fact_order_item")
+fact_order_item = spark.table("iceberg.gold.fact_order_item")
+
+# Dimensions
 dim_date = spark.table("iceberg.gold.dim_date")
-dim_seller = spark.table("iceberg.gold.dim_seller")
+dim_product = spark.table("iceberg.gold.dim_product")
 dim_customer = spark.table("iceberg.gold.dim_customer")
+dim_seller = spark.table("iceberg.gold.dim_seller")
 
 fact_enriched = (
-    fact
-    .join(
-        dim_date.alias("purchase_date"),
-        col("order_purchase_timestamp_sk") == col("purchase_date.date_sk"),
-        "left"
-    )
-    .join(
-        dim_date.alias("delivery_date"),
-        col("order_delivery_customer_date_sk") == col("delivery_date.date_sk"),
-        "left"
-    )
-    .join(
-        dim_date.alias("estimated_date"),
-        col("order_estimated_date_delivery_date_sk") == col("estimated_date.date_sk"),
-        "left"
-    )
-    .join(dim_seller, "seller_sk", "left")
+    fact_order_item
+    .join(dim_date,
+          fact_order_item.order_purchase_date_sk == dim_date.date_sk,
+          "left")
+    .join(dim_product, "product_sk", "left")
     .join(dim_customer, "customer_sk", "left")
+    .join(dim_seller, "seller_sk", "left")
 )
 
-fact_with_metrics = (
+mart_sales = (
     fact_enriched
-    .withColumn(
-        "delivery_days",
-        datediff(col("delivery_date.full_date"), col("purchase_date.full_date"))
-    )
-    .withColumn(
-        "delay_days",
-        datediff(col("delivery_date.full_date"), col("estimated_date.full_date"))
-    )
-    .withColumn(
-        "late_flag",
-        when(col("delay_days") > 0, 1).otherwise(0)
-    )
-)
-
-mart_logistics = (
-    fact_with_metrics
     .groupBy(
-        col("delivery_date.date_sk").alias("delivery_date_sk"),
-        col("delivery_date.year"),
-        col("delivery_date.month"),
+        col("date_sk"),
+        col("full_date"),
+        col("year"),
+        col("month"),
+        col("product_sk"),
         col("seller_sk"),
-        col("customer_sk")
+        col("customer_sk"),
+        col("order_status")
     )
     .agg(
-        sum("freight_value").alias("shipping_amount"),
-        avg("delivery_days").alias("avg_delivery_days"),
-        avg("delay_days").alias("avg_delay_days"),
-        sum("late_flag").alias("late_items"),
-        count("order_item_id").alias("items_delivered")
+        _sum("price").alias("gross_sales"),
+        _sum("freight_value").alias("shipping_amount"),
+        _sum("total_amount").alias("net_sales"),
+        count("order_item_id").alias("items_sold"),
+        countDistinct("order_id").alias("orders_count")
     )
 )
 
-mart_logistics.write \
+mart_sales.write \
     .format('iceberg') \
     .mode('overwrite') \
-    .saveAsTable('iceberg.gold.mart_logistics')
+    .saveAsTable('iceberg.gold.mart_sales')
 
 spark.stop()

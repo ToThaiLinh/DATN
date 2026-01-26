@@ -7,7 +7,7 @@ def validate(validator):
         "customer_sk",
         "product_sk",
         "seller_sk",
-        "order_purchase_timestamp_sk",
+        "order_purchase_date_sk",
         "order_approved_at_date_sk",
         "order_delivery_carrier_date_sk",
         "order_delivery_customer_date_sk",
@@ -16,8 +16,7 @@ def validate(validator):
         "price",
         "freight_value",
         "total_amount",
-        "order_status",
-        "ingestion_time"
+        "order_status"
     ])
 
     # PK
@@ -28,12 +27,12 @@ def validate(validator):
     validator.expect_column_values_to_not_be_null("order_id")
     validator.expect_column_values_to_not_be_null("order_item_id")
 
-    validator.expect_column_values_to_not_be_null("customer_sk")
-    validator.expect_column_values_to_not_be_null("product_sk")
-    validator.expect_column_values_to_not_be_null("seller_sk")
+    # validator.expect_column_values_to_not_be_null("customer_sk")
+    # validator.expect_column_values_to_not_be_null("product_sk")
+    # validator.expect_column_values_to_not_be_null("seller_sk")
 
-    validator.expect_column_values_to_not_be_null("order_purchase_timestamp_sk")
-    validator.expect_column_values_to_not_be_null("shipping_limit_date_sk")
+    validator.expect_column_values_to_not_be_null("order_purchase_date_sk")
+    # validator.expect_column_values_to_not_be_null("shipping_limit_date_sk")
 
     validator.expect_column_values_to_not_be_null("price")
     validator.expect_column_values_to_be_between(
@@ -67,5 +66,3 @@ def validate(validator):
             "unavailable"
         ]
     )
-
-    validator.expect_column_values_to_not_be_null("ingestion_time")

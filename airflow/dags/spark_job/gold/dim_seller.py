@@ -33,8 +33,7 @@ seller_stg = (
         "seller_id",
         col("seller_zip_code_prefix"),
         "seller_city",
-        "seller_state",
-        col("ingestion_time")
+        "seller_state"
     )
     .withColumn(
         "hash_diff",
@@ -117,8 +116,7 @@ else:
             col("src.seller_id"),
             col("src.seller_zip_code_prefix"),
             col("src.seller_city"),
-            col("src.seller_state"),
-            col("src.ingestion_time")
+            col("src.seller_state")
         )
         .withColumn("seller_sk", monotonically_increasing_id())
         .withColumn("effective_from", current_timestamp())

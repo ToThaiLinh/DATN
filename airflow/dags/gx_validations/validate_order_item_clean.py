@@ -8,7 +8,7 @@ def validate(validator):
         "shipping_limit_date",
         "price",
         "freight_value",
-        "ingestion_date"
+        "ingestion_time"
     ])
 
     # PK
@@ -36,4 +36,4 @@ def validate(validator):
         min_value=0
     )
 
-    validator.expect_column_values_to_not_be_null("ingestion_date")
+    validator.expect_column_values_to_not_be_null("ingestion_time")

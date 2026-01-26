@@ -20,24 +20,15 @@ def ge_validate_iceberg():
         from pathlib import Path
 
         GX_ROOT = Path("/opt/airflow/great_expectations")
-        GX_YML = GX_ROOT / "great_expectations.yml"
-
-        # tạo folder nếu chưa có
         GX_ROOT.mkdir(parents=True, exist_ok=True)
 
-        # nếu chưa có project → init bằng CLI
-        if not GX_YML.exists():
-            print("⚠️ GX project chưa tồn tại → init bằng CLI")
-            import subprocess
-            subprocess.run(
-                ["great_expectations", "init"],
-                cwd=str(GX_ROOT),
-                check=True
-            )
-            print("✅ GX project initialized")
+        context = gx.get_context(
+            project_root_dir=str(GX_ROOT),
+            mode="file"
+        )
 
-        # load context
-        context = gx.get_context(project_root_dir=str(GX_ROOT))
+        print("✅ GX context ready")
+        print(context.root_directory)
 
         print(f"📁 GX root: {context.root_directory}")
         print(f"📊 Docs sites: {context.get_docs_sites_urls()}")
@@ -76,27 +67,33 @@ def ge_validate_iceberg():
 
             # ---------- Read Iceberg ----------
             df = spark.read \
-                .format('iceberg') \
-                .load('iceberg.test.test_iceberg_v1')
+                .format("iceberg") \
+                .load("iceberg.test.test_iceberg_v1")
+
             print(f"📊 Loaded dataframe: {df.count()} rows")
 
-            # ---------- GX ----------
+            # ---------- GX Context ----------
+            import great_expectations as gx
+
             context = gx.get_context(
                 project_root_dir="/opt/airflow/great_expectations"
             )
 
-            # datasource (idempotent)
+            # ---------- Datasource (idempotent) ----------
+            datasource_name = "spark_iceberg"
+
             try:
-                datasource = context.get_datasource("spark_iceberg")
-                print("ℹ️ Datasource spark_iceberg đã tồn tại")
+                datasource = context.get_datasource(datasource_name)
+                print(f"ℹ️ Datasource {datasource_name} đã tồn tại")
             except Exception:
                 datasource = context.sources.add_spark(
-                    name="spark_iceberg"
+                    name=datasource_name
                 )
-                print("✅ Datasource spark_iceberg created")
+                print(f"✅ Datasource {datasource_name} created")
 
-            # asset (idenpotency)
+            # ---------- Asset (idempotent) ----------
             asset_name = "test_iceberg_v1_df"
+
             try:
                 asset = datasource.get_asset(asset_name)
                 print(f"♻️ Reuse asset: {asset_name}")
@@ -106,44 +103,62 @@ def ge_validate_iceberg():
                 )
                 print(f"✅ Asset {asset_name} created")
 
-            # # batch request (bind runtime dataframe)
+            # ---------- Batch Request ----------
             batch_request = asset.build_batch_request(
                 dataframe=df
             )
-            # print("DataFrame type:", type(df))
-            # print("Row count:", df.count())
-            # print("BatchRequest:", batch_request)
-            # print("Datasource:", datasource)
-            # print("Asset:", asset)
-            # print("BatchRequest:", batch_request)
-            # print("DataFrame type:", type(df))
 
+            suite_name = "test_iceberg_v1_suite"
+
+            # ---- Get or create expectation suite ----
+            try:
+                context.get_expectation_suite(suite_name)
+                print(f"♻️ Reuse expectation suite: {suite_name}")
+            except Exception:
+                context.add_expectation_suite(expectation_suite_name=suite_name)
+                print(f"✅ Created expectation suite: {suite_name}")
+
+
+            # ---------- Expectation Suite ----------
+            suite_name = "test_iceberg_v1_suite"
 
             validator = context.get_validator(
-                batch_request=batch_request
+                batch_request=batch_request,
+                expectation_suite_name=suite_name
             )
+            validator.expectation_suite.expectations = []
 
+            # ---------- Expectations ----------
             validator.expect_column_to_exist("name")
             validator.expect_column_values_to_not_be_null("name")
 
             validator.save_expectation_suite(discard_failed_expectations=False)
 
+            # ---------- Checkpoint (CHUẨN) ----------
+            checkpoint_name = "test_iceberg_v1_checkpoint"
+
             checkpoint = context.add_or_update_checkpoint(
-                name="my_quickstart_checkpoint",
-                validator=validator,
+                name=checkpoint_name,
+                validations=[
+                    {
+                        "batch_request": batch_request,
+                        "expectation_suite_name": suite_name,
+                    }
+                ],
             )
 
+            # ---------- Run Checkpoint ----------
             checkpoint_result = checkpoint.run()
 
-            context.view_validation_result(checkpoint_result)
-
+            # ---------- Data Docs ----------
             context.build_data_docs()
-            urls = context.get_docs_sites_urls()
-            print("Data Docs URLs:", urls)
 
-            # result = validator.validate()
-            # if not result["success"]:
-            #     raise ValueError("❌ GX validation FAILED")
+            docs_urls = context.get_docs_sites_urls()
+            print("📘 Data Docs URLs:", docs_urls)
+
+            # ---------- Fail DAG nếu validation fail ----------
+            if not checkpoint_result["success"]:
+                raise RuntimeError("❌ GX validation FAILED")
 
             print("✅ GX validation SUCCESS")
             return "VALIDATION OK"

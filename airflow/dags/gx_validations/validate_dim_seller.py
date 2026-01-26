@@ -8,8 +8,7 @@ def validate(validator):
         "seller_state",
         "effective_from",
         "effective_to",
-        "is_current",
-        "ingestion_time"
+        "is_current"
     ])
 
     # PK
@@ -37,5 +36,3 @@ def validate(validator):
         "is_current",
         [True, False]
     )
-
-    validator.expect_column_values_to_not_be_null("ingestion_time")

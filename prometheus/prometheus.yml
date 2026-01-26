@@ -33,75 +33,75 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  ###############
-  # Node-exporter #
-  ###############
-  - job_name: "node-exporter"
-    scrape_interval: 10s
-    static_configs:
-      - targets: ["node-exporter:9100"]
-        labels:
-          group: "spark"
-          instance: "node-exporter"
+  # ###############
+  # # Node-exporter #
+  # ###############
+  # - job_name: "node-exporter"
+  #   scrape_interval: 10s
+  #   static_configs:
+  #     - targets: ["node-exporter:9100"]
+  #       labels:
+  #         group: "spark"
+  #         instance: "node-exporter"
 
-  ###############
-  # Spark Master #
-  ###############
-  - job_name: "spark-master"
-    scrape_interval: 10s
-    metrics_path: "/metrics"
-    static_configs:
-      - targets: ["spark-master:7071"]
-        labels:
-          group: "spark"
-          instance: "master"
+  # ###############
+  # # Spark Master #
+  # ###############
+  # - job_name: "spark-master"
+  #   scrape_interval: 10s
+  #   metrics_path: "/metrics"
+  #   static_configs:
+  #     - targets: ["spark-master:7071"]
+  #       labels:
+  #         group: "spark"
+  #         instance: "master"
 
-  ###############
-  # Spark Worker #
-  ###############
-  - job_name: "spark-worker"
-    scrape_interval: 10s
-    metrics_path: "/metrics/prometheus"
-    static_configs:
-      - targets: ["spark-master:8081"]
-        labels:
-          group: "spark"
-          instance: "worker"
+  # ###############
+  # # Spark Worker #
+  # ###############
+  # - job_name: "spark-worker"
+  #   scrape_interval: 10s
+  #   metrics_path: "/metrics/prometheus"
+  #   static_configs:
+  #     - targets: ["spark-master:8081"]
+  #       labels:
+  #         group: "spark"
+  #         instance: "worker"
 
-  ###############
-  # Spark Applications #
-  ###############
-  - job_name: "spark-applications"
-    scrape_interval: 10s
-    metrics_path: "/metrics/applications/prometheus"
-    static_configs:
-      - targets: ["spark-master:8080"]
-        labels:
-          group: "spark"
-          instance: "applications"
+  # ###############
+  # # Spark Applications #
+  # ###############
+  # - job_name: "spark-applications"
+  #   scrape_interval: 10s
+  #   metrics_path: "/metrics/applications/prometheus"
+  #   static_configs:
+  #     - targets: ["spark-master:8080"]
+  #       labels:
+  #         group: "spark"
+  #         instance: "applications"
 
-  ###############
-  # Spark Driver #
-  ###############
-  - job_name: "spark-driver"
-    scrape_interval: 10s
-    metrics_path: "/metrics/prometheus/"
-    static_configs:
-      - targets: ["spark:4040"]
-        labels:
-          group: "spark"
-          instance: "driver"
+  # ###############
+  # # Spark Driver #
+  # ###############
+  # - job_name: "spark-driver"
+  #   scrape_interval: 10s
+  #   metrics_path: "/metrics/prometheus/"
+  #   static_configs:
+  #     - targets: ["spark:4040"]
+  #       labels:
+  #         group: "spark"
+  #         instance: "driver"
 
-  - job_name: "spark-master-jmx"
-    static_configs:
-      - targets: ["spark-master:7071"]
+  # - job_name: "spark-master-jmx"
+  #   static_configs:
+  #     - targets: ["spark-master:7071"]
 
-  - job_name: minio-cluster
-    metrics_path: /minio/v2/metrics/cluster
-    scheme: http
-    basic_auth:
-      username: minioadmin
-      password: minioadmin
-    static_configs:
-      - targets:
-          - minio:9000
+  # - job_name: minio-cluster
+  #   metrics_path: /minio/v2/metrics/cluster
+  #   scheme: http
+  #   basic_auth:
+  #     username: minioadmin
+  #     password: minioadmin
+  #   static_configs:
+  #     - targets:
+  #         - minio:9000

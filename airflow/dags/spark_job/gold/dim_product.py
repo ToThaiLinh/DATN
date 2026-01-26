@@ -39,8 +39,7 @@ product_stg = (
         "product_weight_g",
         "product_height_cm",
         "product_length_cm",
-        "product_width_cm",
-        col("ingestion_time")
+        "product_width_cm"
     )
     .withColumn(
         "hash_diff",
@@ -142,8 +141,7 @@ else:
             col("src.product_weight_g"),
             col("src.product_height_cm"),
             col("src.product_length_cm"),
-            col("src.product_width_cm"),
-            col("src.ingestion_time")
+            col("src.product_width_cm")
         )
         .withColumn("product_sk", monotonically_increasing_id())
         .withColumn("effective_from", current_timestamp())

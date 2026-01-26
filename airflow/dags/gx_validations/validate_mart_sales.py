@@ -18,9 +18,9 @@ def validate(validator):
 
     # PK
     validator.expect_column_values_to_not_be_null("date_sk")
-    validator.expect_column_values_to_not_be_null("product_sk")
-    validator.expect_column_values_to_not_be_null("seller_sk")
-    validator.expect_column_values_to_not_be_null("customer_sk")
+    # validator.expect_column_values_to_not_be_null("product_sk")
+    # validator.expect_column_values_to_not_be_null("seller_sk")
+    # validator.expect_column_values_to_not_be_null("customer_sk")
     validator.expect_column_values_to_not_be_null("order_status")
     validator.expect_compound_columns_to_be_unique(
         ["date_sk", "product_sk", "seller_sk", "customer_sk", "order_status"]

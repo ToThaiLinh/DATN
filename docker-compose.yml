@@ -273,7 +273,7 @@ services:
 
   # Airflow
   airflow-webserver:
-    image: thailinh2003/airflow:6.0.0
+    image: thailinh2003/airflow:7.0.0
     container_name: airflow-webserver
     hostname: airflow-webserver
     restart: always
@@ -300,7 +300,7 @@ services:
       - data_network
 
   airflow-scheduler:
-    image: thailinh2003/airflow:6.0.0
+    image: thailinh2003/airflow:7.0.0
     container_name: airflow-scheduler
     hostname: airflow-scheduler
     restart: always
@@ -413,7 +413,7 @@ services:
     networks:
       - data_network
   grafana:
-    image: grafana/grafana:6.5.0
+    image: grafana/grafana:12.3
     container_name: grafana
     hostname: grafana
     restart: unless-stopped
@@ -440,6 +440,8 @@ services:
       - 9090:9090
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus/data"
+      - "--storage.tsdb.retention.time=15d"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/prometheus_db:/prometheus/data:rw #needs command 'sudo chmod -R 777 Prometheus/prometheus_db'

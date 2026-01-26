@@ -1,15 +1,15 @@
 def validate(validator):
     # Schema
     validator.expect_table_columns_to_match_set([
-        "customer_sk",
         "customer_id",
         "customer_unique_id",
+        "customer_zip_code",
         "customer_city",
         "customer_state",
-        "effectivate_from",
-        "effectivate_to",
-        "is_current",
-        "ingestion_time"
+        "customer_sk",
+        "effective_from",
+        "effective_to",
+        "is_current"
     ])
 
     # PK
@@ -29,12 +29,10 @@ def validate(validator):
         max_value=20
     )
 
-    validator.expect_column_values_to_not_be_null("effectivate_from")
+    validator.expect_column_values_to_not_be_null("effective_from")
 
     validator.expect_column_values_to_not_be_null("is_current")
     validator.expect_column_values_to_be_in_set(
         "is_current",
         [True, False]
     )
-
-    validator.expect_column_values_to_not_be_null("ingestion_time")

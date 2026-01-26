@@ -51,8 +51,7 @@ fact_base = (
 
         col("oi.price"),
         col("oi.freight_value"),
-        col("o.order_status"),
-        col("oi.ingestion_time")
+        col("o.order_status")
     )
 )
 
@@ -136,8 +135,7 @@ fact_order_item = (
         col("freight_value"),
         (col("price") + col("freight_value")).alias("total_amount"),
 
-        col("order_status"),
-        current_timestamp().alias("ingestion_time")
+        col("order_status")
     )
 )
 
