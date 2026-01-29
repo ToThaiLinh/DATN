@@ -149,13 +149,16 @@ else:
         .withColumn("is_current", lit(True))
     )
 
-    final_dim = (
-        dim_product
-        .filter(col("is_current") == False)
-        .unionByName(expired)
-        .unionByName(new_records)
-    )
-
-    final_dim.write.mode("overwrite").saveAsTable("iceberg.gold.dim_product")
+    if changed.rdd.isEmpty():
+        print("No changes detected. Skip SCD2 update.")
+    else:
+        final_dim = (
+            dim_product
+            .filter(col("is_current") == False)
+            .unionByName(expired)
+            .unionByName(new_records)
+        )
+    
+        final_dim.write.mode("overwrite").saveAsTable("iceberg.gold.dim_product")
 
     spark.stop()

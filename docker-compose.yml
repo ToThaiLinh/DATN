@@ -184,6 +184,7 @@ services:
     volumes:
       - ./spark/jmx-config.yaml:/opt/jmx/config.yaml
       - ./spark/jars/jmx_prometheus_javaagent-0.16.1.jar:/opt/jmx/jmx_prometheus_javaagent.jar
+      # - ./spark/conf/metrics.properties=/opt/spark/conf/metrics.properties
     environment:
       SPARK_MASTER_HOST: spark-master
       SPARK_MASTER_PORT: 7077
@@ -440,11 +441,11 @@ services:
       - 9090:9090
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus/data"
+      - "--storage.tsdb.path=/prometheus"
       - "--storage.tsdb.retention.time=15d"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/prometheus_db:/prometheus/data:rw #needs command 'sudo chmod -R 777 Prometheus/prometheus_db'
+      - ./prometheus/prometheus_db:/prometheus:rw #needs command 'sudo chmod -R 777 prometheus/prometheus_db'
     depends_on:
       - node-exporter
     networks:

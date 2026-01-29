@@ -16,6 +16,12 @@
 # Kafka
 /kafka/
 
+#Prometheus
+/prometheus/prometheus_db
+
+#Grafana
+/grafana/grafana_db/
+
 # Python
 __pycache__/
 *.pyc

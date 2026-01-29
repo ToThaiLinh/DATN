@@ -124,13 +124,17 @@ else:
         .withColumn("is_current", lit(True))
     )
 
-    final_dim = (
-        dim_seller
-        .filter(col("is_current") == False)
-        .unionByName(expired)
-        .unionByName(new_records)
-    )
+    if not changed.rdd.isEmpty():
 
-    final_dim.write.mode("overwrite").saveAsTable("iceberg.gold.dim_seller")
+        final_dim = (
+            dim_seller
+            .filter(col("is_current") == False)
+            .unionByName(expired)
+            .unionByName(new_records)
+        )
+    
+        final_dim.write.mode("overwrite").saveAsTable("iceberg.gold.dim_seller")
+    else:
+        print("No changes detected for dim_seller. Skip overwrite.")
 
 spark.stop()
