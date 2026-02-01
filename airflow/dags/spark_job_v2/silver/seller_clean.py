@@ -25,25 +25,48 @@ spark = SparkSession.builder \
 
 spark.sparkContext.setLogLevel('ERROR')
 
-df = spark.read \
-    .format('iceberg') \
-    .load('iceberg.bronze.olist_sellers_dataset')
-df.printSchema()
-# df.show()
+try:
+    last_processed_time = spark.sql("""
+        SELECT COALESCE(MAX(ingestion_time), TIMESTAMP '1970-01-01 00:00:00')
+        FROM iceberg.silver.seller_clean
+    """).collect()[0][0]
+except:
+    last_processed_time = "1970-01-01 00:00:00"
 
-w = Window.partitionBy("seller_id").orderBy(col("ingestion_time").desc())
+bronze_inc_df = (
+    spark.read
+    .format("iceberg")
+    .load("iceberg.bronze.olist_sellers_dataset")
+    .filter(col("ingestion_time") > last_processed_time)
+)
 
-df = (
-    df.withColumn("rn", row_number().over(w))
+if bronze_inc_df.rdd.isEmpty():
+    print("No new seller records. Skip silver load.")
+    spark.stop()
+    exit(0)
+
+w = Window.partitionBy("seller_id") \
+          .orderBy(col("ingestion_time").desc())
+
+staging_df = (
+    bronze_inc_df
+    .withColumn("rn", row_number().over(w))
     .filter(col("rn") == 1)
     .drop("rn")
 )
 
-df = df.withColumn("ingestion_time", current_timestamp())
+staging_df = staging_df.withColumn("ingestion_time", current_timestamp())
 
-df.write \
-    .format('iceberg') \
-    .mode('overwrite') \
-    .saveAsTable('iceberg.silver.seller_clean')
+staging_df.createOrReplaceTempView("stg_seller_clean")
+
+spark.sql("""
+MERGE INTO iceberg.silver.seller_clean t
+USING stg_seller_clean s
+ON t.seller_id = s.seller_id
+WHEN MATCHED THEN
+  UPDATE SET *
+WHEN NOT MATCHED THEN
+  INSERT *
+""")
 
 spark.stop()

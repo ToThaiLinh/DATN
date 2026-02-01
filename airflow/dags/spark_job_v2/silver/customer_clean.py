@@ -3,6 +3,7 @@ from pyspark.sql.functions import *
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
 from pyspark.sql.window import Window
+from gx_validations.base import run_validation
 
 spark = SparkSession.builder \
     .appName("customer_clean") \
@@ -55,11 +56,18 @@ staging_df = (
 
 staging_df.createOrReplaceTempView("stg_customer_clean")
 
+# table_full_name = 'iceberg.silver.customer_clean'
+# run_validation(
+#     dataframe=staging_df,
+#     table_name=table_full_name,
+#     validate_fn=validation_module.validate
+# )
+
 spark.sql("""
 MERGE INTO iceberg.silver.customer_clean t
 USING stg_customer_clean s
 ON t.customer_id = s.customer_id
-WHEN MATCHED AND t.record_hash <> s.record_hash THEN
+WHEN MATCHED THEN
   UPDATE SET *
 WHEN NOT MATCHED THEN
   INSERT *

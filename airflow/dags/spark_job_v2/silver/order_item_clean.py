@@ -25,33 +25,57 @@ spark = SparkSession.builder \
 
 spark.sparkContext.setLogLevel('ERROR')
 
-df = spark.read \
-    .format('iceberg') \
-    .load('iceberg.bronze.olist_order_items_dataset')
-df.printSchema()
-# df.show()
+try:
+    last_processed_time = spark.sql("""
+        SELECT COALESCE(MAX(ingestion_time), TIMESTAMP '1970-01-01 00:00:00')
+        FROM iceberg.silver.order_item_clean
+    """).collect()[0][0]
+except:
+    last_processed_time = "1970-01-01 00:00:00"
 
-df_max_time = (
-    df.agg(F.max("ingestion_time").alias("max_ingestion_time"))
+bronze_inc_df = (
+    spark.read
+    .format("iceberg")
+    .load("iceberg.bronze.olist_order_items_dataset")
+    .filter(col("ingestion_time") > last_processed_time)
 )
 
-max_time = df_max_time.collect()[0][0]
+if bronze_inc_df.rdd.isEmpty():
+    print("No new order_item records. Skip silver load.")
+    spark.stop()
+    exit(0)
 
-df = df.filter(col("ingestion_time") == max_time)
+w = Window.partitionBy("order_id", "order_item_id") \
+          .orderBy(col("ingestion_time").desc())
 
-df = (
-    df
+staging_df = (
+    bronze_inc_df
+    .withColumn("rn", row_number().over(w))
+    .filter(col("rn") == 1)
+    .drop("rn")
+)
+
+staging_df = (
+    staging_df
     .withColumn("order_item_id", col("order_item_id").cast("int"))
     .withColumn("shipping_limit_date", to_timestamp(col("shipping_limit_date")))
     .withColumn("price", col("price").cast("decimal(10,2)"))
     .withColumn("freight_value", col("freight_value").cast("decimal(10,2)"))
+    .withColumn("ingestion_time", current_timestamp())
 )
 
-df.write \
-    .format('iceberg') \
-    .mode('overwrite') \
-    .saveAsTable('iceberg.silver.order_item_clean')
 
-df = df.withColumn("ingestion_time", current_timestamp())
+staging_df.createOrReplaceTempView("stg_order_item_clean")
+
+spark.sql("""
+MERGE INTO iceberg.silver.order_item_clean t
+USING stg_order_item_clean s
+ON t.order_id = s.order_id
+ AND t.order_item_id = s.order_item_id
+WHEN MATCHED THEN
+  UPDATE SET *
+WHEN NOT MATCHED THEN
+  INSERT *
+""")
 
 spark.stop()

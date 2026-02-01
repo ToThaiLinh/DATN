@@ -25,19 +25,34 @@ spark = SparkSession.builder \
 
 spark.sparkContext.setLogLevel('ERROR')
 
-df = spark.read \
-    .format('iceberg') \
-    .load('iceberg.bronze.olist_orders_dataset')
-df.printSchema()
-# df.show()
+try:
+    last_processed_time = spark.sql("""
+        SELECT COALESCE(MAX(ingestion_time), TIMESTAMP '1970-01-01 00:00:00')
+        FROM iceberg.silver.order_clean
+    """).collect()[0][0]
+except:
+    last_processed_time = "1970-01-01 00:00:00"
 
-df_max_time = (
-    df.agg(F.max("ingestion_time").alias("max_ingestion_time"))
+bronze_inc_df = (
+    spark.read
+    .format("iceberg")
+    .load("iceberg.bronze.olist_orders_dataset")
+    .filter(col("ingestion_time") > last_processed_time)
 )
 
-max_time = df_max_time.collect()[0][0]
+if bronze_inc_df.rdd.isEmpty():
+    print("No new order records. Skip silver load.")
+    spark.stop()
+    exit(0)
 
-df = df.filter(col("ingestion_time") == max_time)
+w = Window.partitionBy("order_id").orderBy(col("ingestion_time").desc())
+
+staging_df = (
+    bronze_inc_df
+    .withColumn("rn", row_number().over(w))
+    .filter(col("rn") == 1)
+    .drop("rn")
+)
 
 time_cols = [
     "order_purchase_timestamp",
@@ -48,13 +63,20 @@ time_cols = [
 ]
 
 for c in time_cols:
-    df = df.withColumn(c, col(c).cast("timestamp"))
+    staging_df = staging_df.withColumn(c, col(c).cast("timestamp"))
 
-df = df.withColumn("ingestion_time", current_timestamp())
+staging_df = staging_df.withColumn("ingestion_time", current_timestamp())
 
-df.write \
-    .format('iceberg') \
-    .mode('overwrite') \
-    .saveAsTable('iceberg.silver.order_clean')
+staging_df.createOrReplaceTempView("stg_order_clean")
+
+spark.sql("""
+MERGE INTO iceberg.silver.order_clean t
+USING stg_order_clean s
+ON t.order_id = s.order_id
+WHEN MATCHED THEN
+  UPDATE SET *
+WHEN NOT MATCHED THEN
+  INSERT *
+""")
 
 spark.stop()
